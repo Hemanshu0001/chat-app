@@ -149,8 +149,8 @@ node server.js
 cd frontend
 npm install
 # Edit .env:
-# VITE_API_URL=http://localhost:5000
-# VITE_SOCKET_URL=http://localhost:5000
+# VITE_API_URL=https://chat-app-backend-g19j.onrender.com
+# VITE_SOCKET_URL=https://chat-app-backend-g19j.onrender.com
 npm run dev   # Starts on port 3000 with proxy to backend
 ```
 

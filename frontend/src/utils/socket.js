@@ -5,7 +5,7 @@ let socket = null;
 export const connectSocket = (token) => {
   if (socket && socket.connected) return socket;
 
-  socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
+  socket = io(import.meta.env.VITE_SOCKET_URL || 'https://chat-app-backend-g19j.onrender.com', {
     auth: { token },
     transports: ['websocket', 'polling'],
     reconnection: true,
