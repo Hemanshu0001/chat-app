@@ -510,7 +510,6 @@ export default function ChatBox({
       {/* Video Call Component */}
       {showVideoCall && (
         <VideoCall 
-          ref={videoCallRef}
           currentUser={currentUser}
           socket={socket}
           incomingCall={incomingCall}

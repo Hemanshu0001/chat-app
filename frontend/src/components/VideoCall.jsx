@@ -16,7 +16,7 @@ const VideoCall = forwardRef(function VideoCall({
   onClose,
   activeChatUser 
 }, ref) {
-  const [callState, setCallState] = useState('idle'); // idle, receiving, calling, active
+  const [callState, setCallState] = useState('idle');
   const [remoteUser, setRemoteUser] = useState(null);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
@@ -40,7 +40,7 @@ const VideoCall = forwardRef(function VideoCall({
   // Handle call cleanup on unmount
   useEffect(() => {
     return () => {
-      endCall();
+      cleanup();
     };
   }, []);
 
@@ -61,23 +61,29 @@ const VideoCall = forwardRef(function VideoCall({
   };
 
   const endCall = () => {
-    if (remoteUser) {
+    if (remoteUser && socket) {
       socket.emit('end-call', { to: remoteUser.userId });
     }
     cleanup();
-    onClose();
+    if (onClose) onClose();
   };
 
   const rejectCall = () => {
-    if (incomingCall) {
+    if (incomingCall && socket) {
       socket.emit('reject-call', { to: incomingCall.from });
     }
     cleanup();
-    onClose();
+    if (onClose) onClose();
   };
 
   const startCall = async (targetUserId) => {
     console.log('📞 Starting call to:', targetUserId);
+    
+    if (!socket) {
+      alert('Socket not connected. Please refresh and try again.');
+      return;
+    }
+
     setRemoteUser({ userId: targetUserId });
     setCallState('calling');
 
@@ -101,13 +107,19 @@ const VideoCall = forwardRef(function VideoCall({
     } catch (err) {
       console.error('Failed to start call:', err);
       alert('Could not access camera or microphone. Please check permissions.');
-      endCall();
+      cleanup();
+      if (onClose) onClose();
     }
   };
 
   const acceptCall = async () => {
     console.log('✅ Accepting call from:', incomingCall.from);
-    setCallState('active');
+    
+    if (!socket) {
+      alert('Socket not connected. Please refresh and try again.');
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { width: { ideal: 1280 }, height: { ideal: 720 } }, 
@@ -128,6 +140,9 @@ const VideoCall = forwardRef(function VideoCall({
       console.log('📤 Sending answer to caller');
 
       socket.emit('answer-call', { to: incomingCall.from, answer });
+      
+      // Set call state to active after successful setup
+      setCallState('active');
       
       // Process any pending ICE candidates
       processPendingCandidates(pc);
@@ -191,7 +206,7 @@ const VideoCall = forwardRef(function VideoCall({
     }
   };
 
-  // Socket listeners for signaling - register once
+  // Socket listeners for signaling
   useEffect(() => {
     if (!socket) return;
 
@@ -220,7 +235,6 @@ const VideoCall = forwardRef(function VideoCall({
           console.error('Error adding ice candidate:', e);
         }
       } else {
-        // Queue candidate for later
         if (candidate) {
           pendingIceCandidates.current.push(candidate);
         }
@@ -231,20 +245,20 @@ const VideoCall = forwardRef(function VideoCall({
       console.log('❌ Call rejected by remote user');
       alert(`${remoteUser?.userId || 'User'} rejected the call`);
       cleanup();
-      onClose();
+      if (onClose) onClose();
     };
 
     const handleEnded = () => {
       console.log('📞 Call ended by remote user');
       cleanup();
-      onClose();
+      if (onClose) onClose();
     };
 
     const handleUserOffline = ({ to }) => {
       console.log(`⚠️ User ${to} is offline`);
       alert(`User ${to} is not online. Cannot establish call.`);
       cleanup();
-      onClose();
+      if (onClose) onClose();
     };
 
     socket.on('call-answered', handleAnswer);
@@ -262,13 +276,13 @@ const VideoCall = forwardRef(function VideoCall({
     };
   }, [socket]);
 
-  // Auto-start call when VideoCall component is shown and activeChatUser is set
+  // Auto-start call when component is shown
   useEffect(() => {
-    if (activeChatUser && callState === 'idle' && !incomingCall && !remoteUser) {
+    if (activeChatUser && callState === 'idle' && !incomingCall && !remoteUser && socket) {
       console.log('🎯 Auto-initiating call to:', activeChatUser.userId);
       startCall(activeChatUser.userId);
     }
-  }, [activeChatUser, callState, incomingCall, remoteUser]);
+  }, [activeChatUser, callState, incomingCall, remoteUser, socket]);
 
   const toggleMuteAudio = () => {
     if (localStream) {
