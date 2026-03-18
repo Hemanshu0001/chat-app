@@ -31,11 +31,14 @@ const VideoCall = forwardRef(function VideoCall({
   // Initialize call from incoming call
   useEffect(() => {
     if (incomingCall && callState === 'idle') {
-      console.log('📞 Incoming call received from:', incomingCall.from);
+      console.log('📞 INCOMING CALL HANDLER: Setting up receiving state', {
+        from: incomingCall.from,
+        hasOffer: !!incomingCall.offer
+      });
       setRemoteUser({ userId: incomingCall.from });
       setCallState('receiving');
     }
-  }, [incomingCall]);
+  }, [incomingCall, callState]);
 
   // Handle call cleanup on unmount
   useEffect(() => {
@@ -302,12 +305,21 @@ const VideoCall = forwardRef(function VideoCall({
     }
   };
 
-  if (callState === 'idle' && !incomingCall) return null;
+  if (callState === 'idle' && !incomingCall) {
+    console.log('🚫 VideoCall: Not showing - idle state and no incoming call');
+    return null;
+  }
+
+  console.log('✅ VideoCall: SHOWING - callState:', callState, 'hasIncomingCall:', !!incomingCall);
+
+  // Determine the display state
+  const isReceiving = callState === 'receiving' || (callState === 'idle' && incomingCall);
+  const isActive = callState === 'active' || (callState === 'calling');
 
   return (
     <div className="call-overlay">
       <div className="call-card glass">
-        {callState === 'receiving' ? (
+        {isReceiving ? (
           <div className="call-incoming">
             <div className="avatar-huge pulse" style={{ background: getAvatarColor(remoteUser?.userId) }}>
               {getInitials(remoteUser?.userId)}

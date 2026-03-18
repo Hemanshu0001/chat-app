@@ -127,29 +127,36 @@ export default function ChatBox({
       }
     };
 
-    // Handle incoming video call
-    const handleIncomingCall = (data) => {
-      console.log('📞 ChatBox: Incoming call received from:', data?.from);
-      setIncomingCall(data);
-      setShowVideoCall(true);
-    };
-
     socket.on('receive_message', handleReceive);
     socket.on('message_sent', handleSent);
     socket.on('user_typing', handleTyping);
     socket.on('messages_deleted', handleMessagesDeleted);
-    socket.on('incoming-call', handleIncomingCall);
 
     return () => {
       socket.off('receive_message', handleReceive);
       socket.off('message_sent', handleSent);
       socket.off('user_typing', handleTyping);
       socket.off('messages_deleted', handleMessagesDeleted);
-      socket.off('incoming-call', handleIncomingCall);
     };
   }, [socket, selectedUser, currentUser, scrollToBottom]);
 
-  // Handle typing indicator
+  // Persistent listener for incoming calls - NOT dependent on selectedUser
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleIncomingCall = (data) => {
+      console.log('🔔 INCOMING CALL DETECTED from:', data?.from);
+      console.log('📱 Call data:', data);
+      setIncomingCall(data);
+      setShowVideoCall(true);
+    };
+
+    socket.on('incoming-call', handleIncomingCall);
+
+    return () => {
+      socket.off('incoming-call', handleIncomingCall);
+    };
+  }, [socket]);
   const handleInputChange = (e) => {
     setInput(e.target.value);
 
