@@ -320,19 +320,45 @@ const VideoCall = forwardRef(function VideoCall({
     <div className="call-overlay">
       <div className="call-card glass">
         {isReceiving ? (
-          <div className="call-incoming">
-            <div className="avatar-huge pulse" style={{ background: getAvatarColor(remoteUser?.userId) }}>
-              {getInitials(remoteUser?.userId)}
+          <div className="call-incoming animate-slide-in">
+            <div className="call-header">
+              <h2 className="call-title">📞 Incoming Call</h2>
+              <p className="call-status">Someone is calling...</p>
             </div>
-            <h2>Incoming Call</h2>
-            <p>{remoteUser?.userId} is calling you...</p>
+
+            <div className="call-avatar-section">
+              <div className="avatar-huge pulse" style={{ background: getAvatarColor(remoteUser?.userId) }}>
+                <span className="avatar-text">{getInitials(remoteUser?.userId)}</span>
+              </div>
+              <div className="call-info">
+                <h3 className="caller-name">{remoteUser?.userId}</h3>
+                <p className="calling-status">
+                  <span className="status-dot"></span> Calling
+                </p>
+              </div>
+            </div>
+
             <div className="call-actions">
-              <button className="btn-call accept" onClick={acceptCall}>
-                📞 Accept
+              <button 
+                className="btn-call accept" 
+                onClick={acceptCall}
+                title="Accept the call"
+              >
+                <span className="btn-icon">✓</span>
+                <span className="btn-text">Accept</span>
               </button>
-              <button className="btn-call reject" onClick={rejectCall}>
-                ❌ Reject
+              <button 
+                className="btn-call reject" 
+                onClick={rejectCall}
+                title="Reject the call"
+              >
+                <span className="btn-icon">✕</span>
+                <span className="btn-text">Decline</span>
               </button>
+            </div>
+
+            <div className="call-footer">
+              <small>Press Escape to dismiss</small>
             </div>
           </div>
         ) : (
