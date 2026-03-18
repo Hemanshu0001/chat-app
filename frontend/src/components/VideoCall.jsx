@@ -27,6 +27,7 @@ export default function VideoCall({
   // Initialize call from incoming call
   useEffect(() => {
     if (incomingCall && callState === 'idle') {
+      console.log('📞 Incoming call received from:', incomingCall.from);
       setRemoteUser({ userId: incomingCall.from });
       setCallState('receiving');
     }
@@ -72,38 +73,55 @@ export default function VideoCall({
   };
 
   const startCall = async (targetUserId) => {
+    console.log('📞 Starting call to:', targetUserId);
     setRemoteUser({ userId: targetUserId });
     setCallState('calling');
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } }, 
+        audio: { echoCancellation: true, noiseSuppression: true } 
+      });
+      console.log('✅ Local media stream obtained');
       setLocalStream(stream);
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
 
       const pc = createPeerConnection(targetUserId, stream);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
+      console.log('📤 Sending offer to remote user');
 
       socket.emit('call-user', { to: targetUserId, offer });
     } catch (err) {
       console.error('Failed to start call:', err);
-      alert('Could not access camera or microphone');
+      alert('Could not access camera or microphone. Please check permissions.');
       endCall();
     }
   };
 
   const acceptCall = async () => {
+    console.log('✅ Accepting call from:', incomingCall.from);
     setCallState('active');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } }, 
+        audio: { echoCancellation: true, noiseSuppression: true } 
+      });
+      console.log('✅ Local media stream obtained');
       setLocalStream(stream);
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
 
       const pc = createPeerConnection(incomingCall.from, stream);
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
+      console.log('📝 Setting remote description');
 
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
+      console.log('📤 Sending answer to caller');
 
       socket.emit('answer-call', { to: incomingCall.from, answer });
       
@@ -111,36 +129,48 @@ export default function VideoCall({
       processPendingCandidates(pc);
     } catch (err) {
       console.error('Failed to accept call:', err);
-      alert('Could not access camera or microphone');
+      alert('Could not access camera or microphone. Please check permissions.');
       rejectCall();
     }
   };
 
   const createPeerConnection = (targetUserId, stream) => {
+    console.log('🔗 Creating peer connection for:', targetUserId);
     const pc = new RTCPeerConnection(STUN_SERVERS);
     peerConnection.current = pc;
 
+    // Add local tracks to peer connection
     stream.getTracks().forEach(track => {
       pc.addTrack(track, stream);
+      console.log('🎵 Added track:', track.kind);
     });
 
+    // Handle ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log('❄️ Sending ICE candidate');
         socket.emit('ice-candidate', { to: targetUserId, candidate: event.candidate });
       }
     };
 
+    // Handle remote track
     pc.ontrack = (event) => {
+      console.log('📺 Received remote track:', event.track.kind);
       setRemoteStream(event.streams[0]);
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = event.streams[0];
       }
     };
 
+    // Handle connection state changes
     pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-            endCall();
-        }
+      console.log('🔌 Connection state:', pc.connectionState);
+      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+        console.error('Connection failed or disconnected');
+        endCall();
+      } else if (pc.connectionState === 'connected') {
+        console.log('✅ Call connected successfully');
+      }
     };
 
     return pc;
@@ -157,37 +187,54 @@ export default function VideoCall({
     }
   };
 
-  // Socket listeners for signaling
+  // Socket listeners for signaling - register early
   useEffect(() => {
     if (!socket) return;
 
     const handleAnswer = async ({ answer }) => {
-      if (peerConnection.current) {
-        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-        setCallState('active');
-        processPendingCandidates(peerConnection.current);
+      console.log('📞 Call answered by remote user');
+      if (peerConnection.current && answer) {
+        try {
+          await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+          setCallState('active');
+          processPendingCandidates(peerConnection.current);
+        } catch (e) {
+          console.error('Error setting remote description:', e);
+        }
       }
     };
 
     const handleIceCandidate = async ({ candidate }) => {
       if (peerConnection.current && peerConnection.current.remoteDescription) {
         try {
-          await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+          if (candidate) {
+            await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+          }
         } catch (e) {
-          console.error('Error adding ice candidate', e);
+          console.error('Error adding ice candidate:', e);
         }
       } else {
+        // Queue candidate for later
         pendingIceCandidates.current.push(candidate);
       }
     };
 
     const handleRejected = () => {
+      console.log('❌ Call rejected by remote user');
       alert(`${remoteUser?.userId || 'User'} rejected the call`);
       cleanup();
       onClose();
     };
 
     const handleEnded = () => {
+      console.log('📞 Call ended by remote user');
+      cleanup();
+      onClose();
+    };
+
+    const handleUserOffline = ({ to }) => {
+      console.log(`⚠️ User ${to} is offline`);
+      alert(`User ${to} is not online. Cannot establish call.`);
       cleanup();
       onClose();
     };
@@ -196,18 +243,22 @@ export default function VideoCall({
     socket.on('ice-candidate', handleIceCandidate);
     socket.on('call-rejected', handleRejected);
     socket.on('call-ended', handleEnded);
+    socket.on('user-offline', handleUserOffline);
 
     return () => {
       socket.off('call-answered', handleAnswer);
       socket.off('ice-candidate', handleIceCandidate);
       socket.off('call-rejected', handleRejected);
       socket.off('call-ended', handleEnded);
+      socket.off('user-offline', handleUserOffline);
     };
-  }, [socket, remoteUser]);
+  }, [socket, remoteUser, onClose]);
 
   // Export startCall so ChatBox can trigger it
   useEffect(() => {
+    // Only auto-start if there's no incoming call
     if (activeChatUser && callState === 'idle' && !incomingCall) {
+        console.log('🎯 Initiating call to active chat user:', activeChatUser.userId);
         startCall(activeChatUser.userId);
     }
   }, [activeChatUser]);

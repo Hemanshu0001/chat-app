@@ -143,7 +143,11 @@ io.on('connection', async (socket) => {
     const { to, offer } = data;
     const receiverSocketId = onlineUsers.get(to);
     if (receiverSocketId) {
+      console.log(`📞 Forwarding call from ${userId} to ${to} (socket: ${receiverSocketId})`);
       io.to(receiverSocketId).emit('incoming-call', { from: userId, offer });
+    } else {
+      console.warn(`⚠️ User ${to} is not online, cannot forward call`);
+      socket.emit('user-offline', { to });
     }
   });
 
@@ -151,7 +155,10 @@ io.on('connection', async (socket) => {
     const { to, answer } = data;
     const receiverSocketId = onlineUsers.get(to);
     if (receiverSocketId) {
+      console.log(`✅ Forwarding call answer from ${userId} to ${to}`);
       io.to(receiverSocketId).emit('call-answered', { from: userId, answer });
+    } else {
+      console.warn(`⚠️ User ${to} is not online for call answer`);
     }
   });
 
@@ -160,6 +167,8 @@ io.on('connection', async (socket) => {
     const receiverSocketId = onlineUsers.get(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit('ice-candidate', { from: userId, candidate });
+    } else {
+      console.warn(`⚠️ User ${to} is not online for ICE candidate`);
     }
   });
 
@@ -167,6 +176,7 @@ io.on('connection', async (socket) => {
     const { to } = data;
     const receiverSocketId = onlineUsers.get(to);
     if (receiverSocketId) {
+      console.log(`❌ Forwarding call rejection from ${userId} to ${to}`);
       io.to(receiverSocketId).emit('call-rejected', { from: userId });
     }
   });
@@ -175,6 +185,7 @@ io.on('connection', async (socket) => {
     const { to } = data;
     const receiverSocketId = onlineUsers.get(to);
     if (receiverSocketId) {
+      console.log(`📞 Forwarding call end from ${userId} to ${to}`);
       io.to(receiverSocketId).emit('call-ended', { from: userId });
     }
   });
