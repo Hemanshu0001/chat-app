@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import MessageBubble from './MessageBubble';
 import ConfirmModal from './ConfirmModal';
+import VideoCall from './VideoCall';
 import { getAvatarColor, getInitials, formatDate } from '../utils/helpers';
 import API from '../utils/api';
 
@@ -31,6 +32,10 @@ export default function ChatBox({
     onConfirm: null
   });
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  
+  // Video call states
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [incomingCall, setIncomingCall] = useState(null);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -122,16 +127,24 @@ export default function ChatBox({
       }
     };
 
+    // Handle incoming video call
+    const handleIncomingCall = ({ from, offer }) => {
+      setIncomingCall({ from, offer });
+      setShowVideoCall(true);
+    };
+
     socket.on('receive_message', handleReceive);
     socket.on('message_sent', handleSent);
     socket.on('user_typing', handleTyping);
     socket.on('messages_deleted', handleMessagesDeleted);
+    socket.on('incoming-call', handleIncomingCall);
 
     return () => {
       socket.off('receive_message', handleReceive);
       socket.off('message_sent', handleSent);
       socket.off('user_typing', handleTyping);
       socket.off('messages_deleted', handleMessagesDeleted);
+      socket.off('incoming-call', handleIncomingCall);
     };
   }, [socket, selectedUser, currentUser, scrollToBottom]);
 
@@ -318,6 +331,12 @@ export default function ChatBox({
   // Get count of total messages
   const totalMessagesCount = messages.length;
 
+  // Close video call modal
+  const handleCloseVideoCall = () => {
+    setShowVideoCall(false);
+    setIncomingCall(null);
+  };
+
   if (!selectedUser) return null;
 
   return (
@@ -339,6 +358,17 @@ export default function ChatBox({
               : '⚫ Offline'}
           </div>
         </div>
+        
+        {/* Video Call Button - only show when both users are online */}
+        {isOnline && (
+          <button 
+            className="btn-icon" 
+            onClick={() => setShowVideoCall(true)}
+            title="Start video call"
+          >
+            📹
+          </button>
+        )}
         
         {/* Selection mode toggle button */}
         {totalMessagesCount > 0 && !selectionMode && (
@@ -471,6 +501,17 @@ export default function ChatBox({
         onCancel={closeConfirmModal}
         loading={deleting}
       />
+      
+      {/* Video Call Component */}
+      {showVideoCall && (
+        <VideoCall 
+          currentUser={currentUser}
+          socket={socket}
+          incomingCall={incomingCall}
+          onClose={handleCloseVideoCall}
+          activeChatUser={selectedUser}
+        />
+      )}
     </div>
   );
 }

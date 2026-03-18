@@ -138,6 +138,47 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // ── Handle WebRTC Signaling ──
+  socket.on('call-user', (data) => {
+    const { to, offer } = data;
+    const receiverSocketId = onlineUsers.get(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('incoming-call', { from: userId, offer });
+    }
+  });
+
+  socket.on('answer-call', (data) => {
+    const { to, answer } = data;
+    const receiverSocketId = onlineUsers.get(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('call-answered', { from: userId, answer });
+    }
+  });
+
+  socket.on('ice-candidate', (data) => {
+    const { to, candidate } = data;
+    const receiverSocketId = onlineUsers.get(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('ice-candidate', { from: userId, candidate });
+    }
+  });
+
+  socket.on('reject-call', (data) => {
+    const { to } = data;
+    const receiverSocketId = onlineUsers.get(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('call-rejected', { from: userId });
+    }
+  });
+
+  socket.on('end-call', (data) => {
+    const { to } = data;
+    const receiverSocketId = onlineUsers.get(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('call-ended', { from: userId });
+    }
+  });
+
   // ── Handle message deletion ──
   socket.on('delete_messages', ({ messageIds, receiverId }) => {
     if (!messageIds || !receiverId) return;
