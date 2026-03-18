@@ -20,9 +20,9 @@ export const getInitials = (name) => {
 
 export const getAvatarColor = (userId) => {
   const colors = [
-    '#075E54', '#128C7E', '#25D366',
-    '#3b82f6', '#8b5cf6', '#ec4899',
-    '#f59e0b', '#ef4444', '#06b6d4',
+    '#1e40af', '#3b82f6', '#60a5fa', // Navy and Light Blues
+    '#94a3b8', '#cbd5e1', '#f8fafc', // Greys and White
+    '#2563eb', '#1d4ed8', '#475569', // Professional shades
   ];
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {

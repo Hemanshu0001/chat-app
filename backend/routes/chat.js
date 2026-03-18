@@ -119,7 +119,7 @@ router.get('/unread-counts', async (req, res) => {
 });
 
 // @route   POST /api/messages/delete-multiple
-// @desc    Delete multiple messages (only sender's messages)
+// @desc    Delete multiple messages (sender or receiver can delete)
 // @access  Protected
 // NOTE: This route MUST be defined BEFORE /messages/:id to avoid route conflicts
 router.post('/messages/delete-multiple', async (req, res) => {
@@ -130,18 +130,26 @@ router.post('/messages/delete-multiple', async (req, res) => {
   }
   
   try {
-    // Find all messages that belong to the current user
+    // Find messages where the current user is either the sender OR receiver
     const messages = await Message.find({
       _id: { $in: messageIds },
-      senderId: req.user.userId
+      $or: [
+        { senderId: req.user.userId },
+        { receiverId: req.user.userId }
+      ]
     });
     
     if (messages.length === 0) {
-      return res.status(404).json({ message: 'No deletable messages found' });
+      return res.status(404).json({ message: 'No deletable messages found or unauthorized' });
     }
     
     const deletableIds = messages.map(m => m._id);
-    const receivers = [...new Set(messages.map(m => m.receiverId))];
+    
+    // Identify all other users in these conversations to notify them
+    const otherUsers = new Set();
+    messages.forEach(m => {
+      otherUsers.add(m.senderId === req.user.userId ? m.receiverId : m.senderId);
+    });
     
     // Delete the messages
     await Message.deleteMany({ _id: { $in: deletableIds } });
@@ -149,7 +157,7 @@ router.post('/messages/delete-multiple', async (req, res) => {
     res.json({ 
       message: `${deletableIds.length} message(s) deleted successfully`,
       deletedIds: deletableIds.map(id => id.toString()),
-      receivers
+      receivers: Array.from(otherUsers)
     });
   } catch (error) {
     console.error('Delete multiple messages error:', error);
@@ -158,7 +166,7 @@ router.post('/messages/delete-multiple', async (req, res) => {
 });
 
 // @route   DELETE /api/messages/:id
-// @desc    Delete a single message (only sender can delete)
+// @desc    Delete a single message (sender or receiver can delete)
 // @access  Protected
 router.delete('/messages/:id', async (req, res) => {
   try {
@@ -168,17 +176,20 @@ router.delete('/messages/:id', async (req, res) => {
       return res.status(404).json({ message: 'Message not found' });
     }
     
-    // Only the sender can delete their message
-    if (message.senderId !== req.user.userId) {
-      return res.status(403).json({ message: 'You can only delete your own messages' });
+    // Both the sender and the receiver can delete this message
+    if (message.senderId !== req.user.userId && message.receiverId !== req.user.userId) {
+      return res.status(403).json({ message: 'You are not authorized to delete this message' });
     }
+    
+    // The other person who needs to be notified
+    const notifyId = message.senderId === req.user.userId ? message.receiverId : message.senderId;
     
     await Message.findByIdAndDelete(req.params.id);
     
     res.json({ 
       message: 'Message deleted successfully',
       deletedId: req.params.id,
-      receiverId: message.receiverId
+      receiverId: notifyId
     });
   } catch (error) {
     console.error('Delete message error:', error);

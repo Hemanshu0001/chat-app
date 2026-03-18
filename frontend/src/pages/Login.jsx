@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const ChatIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor">
-    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
   </svg>
 );
 
@@ -41,7 +41,7 @@ export default function Login() {
           <div className="icon">
             <ChatIcon />
           </div>
-          <h1>SimpleChat</h1>
+          <h1>Govt Chat</h1>
           <p>Sign in to start chatting</p>
         </div>
 
@@ -67,39 +67,43 @@ export default function Login() {
             />
           </div>
 
-          <div className="form-group" style={{ position: 'relative' }}>
+          <div className="form-group">
             <label>Password</label>
-            <input
-              type={showPass ? 'text' : 'password'}
-              className="form-input"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              autoComplete="current-password"
-              style={{ paddingRight: '42px' }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPass(!showPass)}
-              style={{
-                position: 'absolute', right: '12px', bottom: '10px',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#999', fontSize: '.9rem'
-              }}
-            >
-              {showPass ? '🙈' : '👁️'}
-            </button>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPass ? 'text' : 'password'}
+                className="form-input"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                autoComplete="current-password"
+                style={{ paddingRight: '48px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                style={{
+                  position: 'absolute', right: '0', top: '0', bottom: '0',
+                  width: '48px',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--text-secondary)', fontSize: '1.2rem',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >
+                {showPass ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             className="btn btn-primary"
             disabled={loading}
-            style={{ marginTop: '8px' }}
+            style={{ marginTop: '12px' }}
           >
             {loading ? (
               <>
-                <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+                <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2, marginRight: 8 }} />
                 Signing in…
               </>
             ) : (
@@ -109,8 +113,8 @@ export default function Login() {
         </form>
 
         <p style={{
-          textAlign: 'center', marginTop: '20px',
-          fontSize: '.8rem', color: '#aaa'
+          textAlign: 'center', marginTop: '24px',
+          fontSize: '.85rem', color: 'var(--text-secondary)'
         }}>
           Contact your admin if you don't have an account
         </p>

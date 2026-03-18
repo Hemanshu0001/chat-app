@@ -216,12 +216,10 @@ export default function ChatBox({
     });
   };
 
-  // Select all sent messages
-  const selectAllSentMessages = () => {
-    const sentMsgIds = messages
-      .filter((m) => m.senderId === currentUser.userId)
-      .map((m) => m._id);
-    setSelectedMessages(new Set(sentMsgIds));
+  // Select all messages
+  const selectAllMessages = () => {
+    const allMsgIds = messages.map((m) => m._id);
+    setSelectedMessages(new Set(allMsgIds));
   };
 
   // Clear selection and exit selection mode
@@ -317,8 +315,8 @@ export default function ChatBox({
     }
   };
 
-  // Get count of sent messages (deletable)
-  const sentMessagesCount = messages.filter((m) => m.senderId === currentUser.userId).length;
+  // Get count of total messages
+  const totalMessagesCount = messages.length;
 
   if (!selectedUser) return null;
 
@@ -343,7 +341,7 @@ export default function ChatBox({
         </div>
         
         {/* Selection mode toggle button */}
-        {sentMessagesCount > 0 && !selectionMode && (
+        {totalMessagesCount > 0 && !selectionMode && (
           <button 
             className="btn-icon" 
             onClick={() => setSelectionMode(true)}
@@ -363,9 +361,9 @@ export default function ChatBox({
           <div className="selection-actions">
             <button 
               className="btn btn-sm btn-ghost" 
-              onClick={selectAllSentMessages}
+              onClick={selectAllMessages}
             >
-              Select All ({sentMessagesCount})
+              Select All ({totalMessagesCount})
             </button>
             <button 
               className="btn btn-sm btn-delete" 

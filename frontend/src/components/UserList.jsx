@@ -29,7 +29,7 @@ export default function UserList({
       {/* Current user info */}
       <div style={{
         padding: '10px 16px',
-        background: '#493b01ff',
+        background: '#0B1839',
         borderBottom: '1px solid var(--border)',
         display: 'flex', alignItems: 'center', gap: 10
       }}>

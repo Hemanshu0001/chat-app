@@ -9,13 +9,13 @@ export default function MessageBubble({
   onDelete 
 }) {
   const handleClick = () => {
-    if (selectionMode && isSent) {
+    if (selectionMode) {
       onSelect?.(message._id);
     }
   };
 
   const handleLongPress = (e) => {
-    if (isSent && !selectionMode) {
+    if (!selectionMode) {
       e.preventDefault();
       onDelete?.(message._id);
     }
@@ -23,12 +23,12 @@ export default function MessageBubble({
 
   return (
     <div 
-      className={`msg-row ${isSent ? 'sent' : 'received'} ${selectionMode && isSent ? 'selectable' : ''} ${isSelected ? 'selected' : ''}`}
+      className={`msg-row ${isSent ? 'sent' : 'received'} ${selectionMode ? 'selectable' : ''} ${isSelected ? 'selected' : ''}`}
       onClick={handleClick}
       onContextMenu={handleLongPress}
     >
-      {/* Selection checkbox for sent messages in selection mode */}
-      {selectionMode && isSent && (
+      {/* Selection checkbox for messages in selection mode */}
+      {selectionMode && (
         <div className="msg-checkbox">
           <input 
             type="checkbox" 
@@ -51,8 +51,8 @@ export default function MessageBubble({
         </div>
       </div>
       
-      {/* Quick delete button for sent messages (not in selection mode) */}
-      {isSent && !selectionMode && (
+      {/* Quick delete button for messages (not in selection mode) */}
+      {!selectionMode && (
         <button 
           className="msg-delete-btn"
           onClick={(e) => {
