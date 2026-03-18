@@ -1,17 +1,21 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef } from 'react';
 import { getAvatarColor, getInitials } from '../utils/helpers';
 
-const STUN_SERVERS = {
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' }
+  ]
 };
 
-export default function VideoCall({ 
+const VideoCall = forwardRef(function VideoCall({ 
   currentUser, 
   socket, 
   incomingCall, 
   onClose,
   activeChatUser 
-}) {
+}, ref) {
   const [callState, setCallState] = useState('idle'); // idle, receiving, calling, active
   const [remoteUser, setRemoteUser] = useState(null);
   const [localStream, setLocalStream] = useState(null);
@@ -31,7 +35,7 @@ export default function VideoCall({
       setRemoteUser({ userId: incomingCall.from });
       setCallState('receiving');
     }
-  }, [incomingCall, callState]);
+  }, [incomingCall]);
 
   // Handle call cleanup on unmount
   useEffect(() => {
@@ -136,7 +140,7 @@ export default function VideoCall({
 
   const createPeerConnection = (targetUserId, stream) => {
     console.log('🔗 Creating peer connection for:', targetUserId);
-    const pc = new RTCPeerConnection(STUN_SERVERS);
+    const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnection.current = pc;
 
     // Add local tracks to peer connection
@@ -187,7 +191,7 @@ export default function VideoCall({
     }
   };
 
-  // Socket listeners for signaling - register early
+  // Socket listeners for signaling - register once
   useEffect(() => {
     if (!socket) return;
 
@@ -204,7 +208,9 @@ export default function VideoCall({
       }
     };
 
-    const handleIceCandidate = async ({ candidate }) => {
+    const handleIceCandidate = async (data) => {
+      console.log('❄️ Received ICE candidate from:', data?.from);
+      const { candidate } = data;
       if (peerConnection.current && peerConnection.current.remoteDescription) {
         try {
           if (candidate) {
@@ -215,7 +221,9 @@ export default function VideoCall({
         }
       } else {
         // Queue candidate for later
-        pendingIceCandidates.current.push(candidate);
+        if (candidate) {
+          pendingIceCandidates.current.push(candidate);
+        }
       }
     };
 
@@ -252,16 +260,15 @@ export default function VideoCall({
       socket.off('call-ended', handleEnded);
       socket.off('user-offline', handleUserOffline);
     };
-  }, [socket, remoteUser, onClose]);
+  }, [socket]);
 
-  // Export startCall so ChatBox can trigger it
+  // Auto-start call when VideoCall component is shown and activeChatUser is set
   useEffect(() => {
-    // Only auto-start if there's no incoming call
-    if (activeChatUser && callState === 'idle' && !incomingCall) {
-        console.log('🎯 Initiating call to active chat user:', activeChatUser.userId);
-        startCall(activeChatUser.userId);
+    if (activeChatUser && callState === 'idle' && !incomingCall && !remoteUser) {
+      console.log('🎯 Auto-initiating call to:', activeChatUser.userId);
+      startCall(activeChatUser.userId);
     }
-  }, [activeChatUser]);
+  }, [activeChatUser, callState, incomingCall, remoteUser]);
 
   const toggleMuteAudio = () => {
     if (localStream) {
@@ -368,4 +375,6 @@ export default function VideoCall({
       </div>
     </div>
   );
-}
+});
+
+export default VideoCall;

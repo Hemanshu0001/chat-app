@@ -128,8 +128,9 @@ export default function ChatBox({
     };
 
     // Handle incoming video call
-    const handleIncomingCall = ({ from, offer }) => {
-      setIncomingCall({ from, offer });
+    const handleIncomingCall = (data) => {
+      console.log('📞 ChatBox: Incoming call received from:', data?.from);
+      setIncomingCall(data);
       setShowVideoCall(true);
     };
 
@@ -363,7 +364,11 @@ export default function ChatBox({
         {isOnline && (
           <button 
             className="btn-icon" 
-            onClick={() => setShowVideoCall(true)}
+            onClick={() => {
+              console.log('📹 Video call button clicked for:', selectedUser.userId);
+              setShowVideoCall(true);
+              setIncomingCall(null); // Clear any incoming call state
+            }}
             title="Start video call"
           >
             📹
@@ -505,11 +510,12 @@ export default function ChatBox({
       {/* Video Call Component */}
       {showVideoCall && (
         <VideoCall 
+          ref={videoCallRef}
           currentUser={currentUser}
           socket={socket}
           incomingCall={incomingCall}
           onClose={handleCloseVideoCall}
-          activeChatUser={selectedUser}
+          activeChatUser={showVideoCall ? selectedUser : null}
         />
       )}
     </div>
