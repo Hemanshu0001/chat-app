@@ -91,6 +91,64 @@ router.put('/block-user/:id', async (req, res) => {
   }
 });
 
+// @route   PUT /api/admin/edit-user/:id
+// @desc    Edit user details (userId and/or password)
+// @access  Admin only
+router.put('/edit-user/:id', async (req, res) => {
+  const { userId, password } = req.body;
+
+  if (!userId?.trim()) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+
+  // Prevent admin userId collision
+  if (userId === process.env.ADMIN_ID) {
+    return res.status(400).json({ message: 'This userId is reserved' });
+  }
+
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if new userId already exists (if changed)
+    if (userId.trim() !== user.userId) {
+      const existingUser = await User.findOne({ userId: userId.trim() });
+      if (existingUser) {
+        return res.status(400).json({ message: 'User with this ID already exists' });
+      }
+    }
+
+    // Update fields
+    user.userId = userId.trim();
+    
+    // Only update password if provided (and it's at least 4 chars)
+    if (password && password.length >= 4) {
+      user.password = password;
+    } else if (password && password.length > 0 && password.length < 4) {
+      return res.status(400).json({ message: 'Password must be at least 4 characters' });
+    }
+
+    await user.save();
+
+    res.json({
+      message: 'User updated successfully',
+      user: {
+        _id: user._id,
+        userId: user.userId,
+        role: user.role,
+        isBlocked: user.isBlocked,
+        isOnline: user.isOnline,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Edit user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   DELETE /api/admin/delete-user/:id
 // @desc    Delete a user
 // @access  Admin only

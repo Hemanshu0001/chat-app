@@ -118,4 +118,72 @@ router.get('/unread-counts', async (req, res) => {
   }
 });
 
+// @route   POST /api/messages/delete-multiple
+// @desc    Delete multiple messages (only sender's messages)
+// @access  Protected
+// NOTE: This route MUST be defined BEFORE /messages/:id to avoid route conflicts
+router.post('/messages/delete-multiple', async (req, res) => {
+  const { messageIds } = req.body;
+  
+  if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+    return res.status(400).json({ message: 'messageIds array is required' });
+  }
+  
+  try {
+    // Find all messages that belong to the current user
+    const messages = await Message.find({
+      _id: { $in: messageIds },
+      senderId: req.user.userId
+    });
+    
+    if (messages.length === 0) {
+      return res.status(404).json({ message: 'No deletable messages found' });
+    }
+    
+    const deletableIds = messages.map(m => m._id);
+    const receivers = [...new Set(messages.map(m => m.receiverId))];
+    
+    // Delete the messages
+    await Message.deleteMany({ _id: { $in: deletableIds } });
+    
+    res.json({ 
+      message: `${deletableIds.length} message(s) deleted successfully`,
+      deletedIds: deletableIds.map(id => id.toString()),
+      receivers
+    });
+  } catch (error) {
+    console.error('Delete multiple messages error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/messages/:id
+// @desc    Delete a single message (only sender can delete)
+// @access  Protected
+router.delete('/messages/:id', async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.id);
+    
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+    
+    // Only the sender can delete their message
+    if (message.senderId !== req.user.userId) {
+      return res.status(403).json({ message: 'You can only delete your own messages' });
+    }
+    
+    await Message.findByIdAndDelete(req.params.id);
+    
+    res.json({ 
+      message: 'Message deleted successfully',
+      deletedId: req.params.id,
+      receiverId: message.receiverId
+    });
+  } catch (error) {
+    console.error('Delete message error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

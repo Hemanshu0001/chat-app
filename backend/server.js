@@ -138,6 +138,20 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // ── Handle message deletion ──
+  socket.on('delete_messages', ({ messageIds, receiverId }) => {
+    if (!messageIds || !receiverId) return;
+    
+    // Notify the receiver about deleted messages
+    const receiverSocketId = onlineUsers.get(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('messages_deleted', { 
+        messageIds, 
+        deletedBy: userId 
+      });
+    }
+  });
+
   // ── Handle disconnection ──
   socket.on('disconnect', async () => {
     console.log(`❌ User disconnected: ${userId}`);

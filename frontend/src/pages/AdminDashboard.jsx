@@ -16,6 +16,13 @@ export default function AdminDashboard() {
   const [toast, setToast] = useState(null);
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState(null); // userId being toggled
+  
+  // Edit modal state
+  const [editModal, setEditModal] = useState(false);
+  const [editUser, setEditUser] = useState(null);
+  const [editUserId, setEditUserId] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -87,6 +94,52 @@ export default function AdminDashboard() {
       showToast('User deleted');
     } catch {
       showToast('Failed to delete user', 'error');
+    }
+  };
+
+  // Open edit modal
+  const openEditModal = (u) => {
+    setEditUser(u);
+    setEditUserId(u.userId);
+    setEditPassword('');
+    setEditModal(true);
+  };
+
+  // Close edit modal
+  const closeEditModal = () => {
+    setEditModal(false);
+    setEditUser(null);
+    setEditUserId('');
+    setEditPassword('');
+  };
+
+  // Handle edit user submit
+  const handleEditUser = async (e) => {
+    e.preventDefault();
+    if (!editUserId.trim()) {
+      showToast('User ID is required', 'error');
+      return;
+    }
+    if (editPassword && editPassword.length > 0 && editPassword.length < 4) {
+      showToast('Password must be at least 4 characters', 'error');
+      return;
+    }
+    
+    setEditLoading(true);
+    try {
+      const payload = { userId: editUserId.trim() };
+      if (editPassword) payload.password = editPassword;
+      
+      const { data } = await API.put(`/api/admin/edit-user/${editUser._id}`, payload);
+      setUsers((prev) =>
+        prev.map((x) => (x._id === editUser._id ? { ...x, ...data.user } : x))
+      );
+      showToast(`User "${data.user.userId}" updated successfully`);
+      closeEditModal();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to update user', 'error');
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -248,6 +301,12 @@ export default function AdminDashboard() {
                       <td>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           <button
+                            className="btn btn-sm btn-edit"
+                            onClick={() => openEditModal(u)}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
                             className={`btn btn-sm ${u.isBlocked ? 'btn-outline' : 'btn-danger'}`}
                             onClick={() => handleToggleBlock(u)}
                             disabled={actionLoading === u._id}
@@ -257,8 +316,7 @@ export default function AdminDashboard() {
                               : u.isBlocked ? '✅ Unblock' : '🚫 Block'}
                           </button>
                           <button
-                            className="btn btn-sm"
-                            style={{ background: '#fee2e2', color: '#991b1b' }}
+                            className="btn btn-sm btn-delete"
                             onClick={() => handleDelete(u)}
                           >
                             🗑️ Delete
@@ -277,6 +335,49 @@ export default function AdminDashboard() {
       {/* Toast */}
       {toast && (
         <div className={`toast ${toast.type}`}>{toast.msg}</div>
+      )}
+
+      {/* Edit User Modal */}
+      {editModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>✏️ Edit User</h3>
+              <button className="modal-close" onClick={closeEditModal}>✕</button>
+            </div>
+            <form onSubmit={handleEditUser}>
+              <div className="form-group">
+                <label>User ID</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editUserId}
+                  onChange={(e) => setEditUserId(e.target.value)}
+                  placeholder="Enter user ID"
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label>New Password (leave empty to keep current)</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder="Enter new password (min 4 chars)"
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn btn-ghost" onClick={closeEditModal}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-success" disabled={editLoading}>
+                  {editLoading ? '⏳ Saving...' : '✅ Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

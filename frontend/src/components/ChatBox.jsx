@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import MessageBubble from './MessageBubble';
+import ConfirmModal from './ConfirmModal';
 import { getAvatarColor, getInitials, formatDate } from '../utils/helpers';
 import API from '../utils/api';
 
@@ -16,10 +17,43 @@ export default function ChatBox({
   const [sending, setSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
+  
+  // Selection mode for multi-delete
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMessages, setSelectedMessages] = useState(new Set());
+  const [deleting, setDeleting] = useState(false);
+  
+  // Confirm modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const chatAreaRef = useRef(null);
 
   const isOnline = onlineUsers.includes(selectedUser?.userId);
+
+  // Handle mobile keyboard visibility
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+    
+    const handleResize = () => {
+      // When keyboard opens, scroll to keep input visible
+      if (document.activeElement === inputRef.current) {
+        setTimeout(() => {
+          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    };
+    
+    window.visualViewport.addEventListener('resize', handleResize);
+    return () => window.visualViewport.removeEventListener('resize', handleResize);
+  }, []);
 
   // Scroll to bottom
   const scrollToBottom = useCallback((smooth = true) => {
@@ -31,6 +65,8 @@ export default function ChatBox({
     if (!selectedUser) return;
     setMessages([]);
     setLoading(true);
+    setSelectionMode(false);
+    setSelectedMessages(new Set());
 
     API.get(`/api/messages/${selectedUser.userId}`)
       .then(({ data }) => {
@@ -72,15 +108,30 @@ export default function ChatBox({
     const handleTyping = ({ senderId, isTyping: typing }) => {
       if (senderId === selectedUser?.userId) setIsTyping(typing);
     };
+    
+    // Handle messages deleted by other user
+    const handleMessagesDeleted = ({ messageIds }) => {
+      if (messageIds && messageIds.length > 0) {
+        setMessages((prev) => prev.filter((m) => !messageIds.includes(m._id)));
+        // Also remove from selection if in selection mode
+        setSelectedMessages((prev) => {
+          const newSet = new Set(prev);
+          messageIds.forEach(id => newSet.delete(id));
+          return newSet;
+        });
+      }
+    };
 
     socket.on('receive_message', handleReceive);
     socket.on('message_sent', handleSent);
     socket.on('user_typing', handleTyping);
+    socket.on('messages_deleted', handleMessagesDeleted);
 
     return () => {
       socket.off('receive_message', handleReceive);
       socket.off('message_sent', handleSent);
       socket.off('user_typing', handleTyping);
+      socket.off('messages_deleted', handleMessagesDeleted);
     };
   }, [socket, selectedUser, currentUser, scrollToBottom]);
 
@@ -152,6 +203,123 @@ export default function ChatBox({
     return groups;
   }, {});
 
+  // Toggle message selection
+  const toggleMessageSelection = (msgId) => {
+    setSelectedMessages((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(msgId)) {
+        newSet.delete(msgId);
+      } else {
+        newSet.add(msgId);
+      }
+      return newSet;
+    });
+  };
+
+  // Select all sent messages
+  const selectAllSentMessages = () => {
+    const sentMsgIds = messages
+      .filter((m) => m.senderId === currentUser.userId)
+      .map((m) => m._id);
+    setSelectedMessages(new Set(sentMsgIds));
+  };
+
+  // Clear selection and exit selection mode
+  const cancelSelection = () => {
+    setSelectionMode(false);
+    setSelectedMessages(new Set());
+  };
+
+  // Close confirm modal
+  const closeConfirmModal = () => {
+    setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+    setPendingDeleteId(null);
+  };
+
+  // Show delete single message confirmation
+  const handleDeleteSingle = (msgId) => {
+    setPendingDeleteId(msgId);
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Message',
+      message: 'Are you sure you want to delete this message? This action cannot be undone.',
+      onConfirm: () => confirmDeleteSingle(msgId)
+    });
+  };
+
+  // Confirm and execute single delete
+  const confirmDeleteSingle = async (msgId) => {
+    setDeleting(true);
+    try {
+      const { data } = await API.delete(`/api/messages/${msgId}`);
+      setMessages((prev) => prev.filter((m) => m._id !== msgId));
+      
+      // Notify receiver via socket
+      if (socket && socket.connected) {
+        socket.emit('delete_messages', { 
+          messageIds: [msgId], 
+          receiverId: data.receiverId 
+        });
+      }
+      closeConfirmModal();
+    } catch (err) {
+      console.error('Delete failed:', err);
+      closeConfirmModal();
+      // Show error toast or alert
+      alert(err.response?.data?.message || 'Failed to delete message');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Show delete multiple messages confirmation
+  const handleDeleteSelected = () => {
+    if (selectedMessages.size === 0) return;
+    
+    const count = selectedMessages.size;
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Messages',
+      message: `Are you sure you want to delete ${count} message${count > 1 ? 's' : ''}? This action cannot be undone.`,
+      onConfirm: confirmDeleteSelected
+    });
+  };
+
+  // Confirm and execute multiple delete
+  const confirmDeleteSelected = async () => {
+    setDeleting(true);
+    try {
+      const messageIds = Array.from(selectedMessages);
+      const { data } = await API.post('/api/messages/delete-multiple', { messageIds });
+      
+      // Remove deleted messages from state
+      const deletedSet = new Set(data.deletedIds);
+      setMessages((prev) => prev.filter((m) => !deletedSet.has(m._id)));
+      
+      // Notify receivers via socket
+      if (socket && socket.connected && data.receivers) {
+        data.receivers.forEach(receiverId => {
+          socket.emit('delete_messages', { 
+            messageIds: data.deletedIds, 
+            receiverId 
+          });
+        });
+      }
+      
+      closeConfirmModal();
+      cancelSelection();
+    } catch (err) {
+      console.error('Delete failed:', err);
+      closeConfirmModal();
+      alert(err.response?.data?.message || 'Failed to delete messages');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Get count of sent messages (deletable)
+  const sentMessagesCount = messages.filter((m) => m.senderId === currentUser.userId).length;
+
   if (!selectedUser) return null;
 
   return (
@@ -163,7 +331,7 @@ export default function ChatBox({
           {getInitials(selectedUser.userId)}
           {isOnline && <span className="online-dot" />}
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <div className="user-name">{selectedUser.userId}</div>
           <div className="user-status">
             {isTyping
@@ -173,7 +341,48 @@ export default function ChatBox({
               : '⚫ Offline'}
           </div>
         </div>
+        
+        {/* Selection mode toggle button */}
+        {sentMessagesCount > 0 && !selectionMode && (
+          <button 
+            className="btn-icon" 
+            onClick={() => setSelectionMode(true)}
+            title="Select messages to delete"
+          >
+            ☑️
+          </button>
+        )}
       </div>
+      
+      {/* Selection Mode Action Bar */}
+      {selectionMode && (
+        <div className="selection-bar">
+          <span className="selection-count">
+            {selectedMessages.size} selected
+          </span>
+          <div className="selection-actions">
+            <button 
+              className="btn btn-sm btn-ghost" 
+              onClick={selectAllSentMessages}
+            >
+              Select All ({sentMessagesCount})
+            </button>
+            <button 
+              className="btn btn-sm btn-delete" 
+              onClick={handleDeleteSelected}
+              disabled={selectedMessages.size === 0 || deleting}
+            >
+              {deleting ? '⏳' : `🗑️ Delete (${selectedMessages.size})`}
+            </button>
+            <button 
+              className="btn btn-sm btn-ghost" 
+              onClick={cancelSelection}
+            >
+              ✕ Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="messages-container">
@@ -198,6 +407,10 @@ export default function ChatBox({
                   key={msg._id}
                   message={msg}
                   isSent={msg.senderId === currentUser.userId}
+                  selectionMode={selectionMode}
+                  isSelected={selectedMessages.has(msg._id)}
+                  onSelect={toggleMessageSelection}
+                  onDelete={handleDeleteSingle}
                 />
               ))}
             </div>
@@ -247,6 +460,19 @@ export default function ChatBox({
           )}
         </button>
       </div>
+      
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmStyle="danger"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={closeConfirmModal}
+        loading={deleting}
+      />
     </div>
   );
 }
