@@ -36,10 +36,10 @@ export default function ChatPage() {
   const [isMobileChat, setIsMobileChat] = useState(false); // mobile: show chat or list
   const socketRef = useRef(null);
 
-  // Video call states
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [incomingCall, setIncomingCall] = useState(null);
   const [activeCallUser, setActiveCallUser] = useState(null);
+  const globalIceCandidates = useRef([]); // Capture candidates that arrive before VideoCall mounts
 
   const showToast = (msg, type = 'info') => {
     setToast({ msg, type });
@@ -71,15 +71,22 @@ export default function ChatPage() {
 
     const handleIncomingCall = (data) => {
       console.log('🔔 INCOMING CALL DETECTED from:', data?.from);
+      globalIceCandidates.current = []; // Reset on new call
       setIncomingCall(data);
       setShowVideoCall(true);
     };
 
+    const handleGlobalIce = (data) => {
+      globalIceCandidates.current.push(data);
+    };
+
     sock.on('incoming-call', handleIncomingCall);
+    sock.on('ice-candidate', handleGlobalIce);
 
     return () => {
       // Don't disconnect on unmount — keep connection alive across re-renders
       sock.off('incoming-call', handleIncomingCall);
+      sock.off('ice-candidate', handleGlobalIce);
     };
   }, [navigate]);
 
@@ -207,6 +214,7 @@ export default function ChatPage() {
           incomingCall={incomingCall}
           onClose={handleCloseVideoCall}
           activeChatUser={showVideoCall ? activeCallUser : null}
+          globalIceCandidates={globalIceCandidates.current}
         />
       )}
     </div>

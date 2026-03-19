@@ -14,7 +14,8 @@ const VideoCall = forwardRef(function VideoCall({
   socket, 
   incomingCall, 
   onClose,
-  activeChatUser 
+  activeChatUser,
+  globalIceCandidates = []
 }, ref) {
   const [callState, setCallState] = useState('idle');
   const [remoteUser, setRemoteUser] = useState(null);
@@ -46,6 +47,20 @@ const VideoCall = forwardRef(function VideoCall({
       cleanup();
     };
   }, []);
+
+  // Bind local stream to video ref
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream, callState]);
+
+  // Bind remote stream to video ref
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream, callState]);
 
   // Cleanup effect
   const cleanup = () => {
@@ -269,6 +284,22 @@ const VideoCall = forwardRef(function VideoCall({
     socket.on('call-rejected', handleRejected);
     socket.on('call-ended', handleEnded);
     socket.on('user-offline', handleUserOffline);
+    
+    // Attempt to process any early candidates that arrived before we mounted
+    if (globalIceCandidates && globalIceCandidates.length > 0) {
+      console.log('🔄 Processing early global ICE candidates', globalIceCandidates.length);
+      globalIceCandidates.forEach(cand => {
+        // Only process candidates meant for us
+        if (cand?.from && (remoteUser?.userId === cand.from || incomingCall?.from === cand.from)) {
+          handleIceCandidate(cand);
+        } else if (!cand.from) {
+           handleIceCandidate(cand);
+        }
+      });
+      // Clear them so we don't process them again on re-renders,
+      // modifying it modifies the array passed from ChatPage by reference!
+      globalIceCandidates.length = 0; 
+    }
 
     return () => {
       socket.off('call-answered', handleAnswer);
