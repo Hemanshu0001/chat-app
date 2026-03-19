@@ -11,6 +11,7 @@ export default function ChatBox({
   socket,
   onlineUsers,
   onBack,
+  onStartVideoCall
 }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -33,9 +34,7 @@ export default function ChatBox({
   });
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   
-  // Video call states
-  const [showVideoCall, setShowVideoCall] = useState(false);
-  const [incomingCall, setIncomingCall] = useState(null);
+  // Remove local video call states
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -140,23 +139,7 @@ export default function ChatBox({
     };
   }, [socket, selectedUser, currentUser, scrollToBottom]);
 
-  // Persistent listener for incoming calls - NOT dependent on selectedUser
-  useEffect(() => {
-    if (!socket) return;
 
-    const handleIncomingCall = (data) => {
-      console.log('🔔 INCOMING CALL DETECTED from:', data?.from);
-      console.log('📱 Call data:', data);
-      setIncomingCall(data);
-      setShowVideoCall(true);
-    };
-
-    socket.on('incoming-call', handleIncomingCall);
-
-    return () => {
-      socket.off('incoming-call', handleIncomingCall);
-    };
-  }, [socket]);
   const handleInputChange = (e) => {
     setInput(e.target.value);
 
@@ -339,11 +322,7 @@ export default function ChatBox({
   // Get count of total messages
   const totalMessagesCount = messages.length;
 
-  // Close video call modal
-  const handleCloseVideoCall = () => {
-    setShowVideoCall(false);
-    setIncomingCall(null);
-  };
+
 
   if (!selectedUser) return null;
 
@@ -373,8 +352,7 @@ export default function ChatBox({
             className="btn-icon" 
             onClick={() => {
               console.log('📹 Video call button clicked for:', selectedUser.userId);
-              setShowVideoCall(true);
-              setIncomingCall(null); // Clear any incoming call state
+              if (onStartVideoCall) onStartVideoCall();
             }}
             title="Start video call"
           >
@@ -514,16 +492,7 @@ export default function ChatBox({
         loading={deleting}
       />
       
-      {/* Video Call Component */}
-      {showVideoCall && (
-        <VideoCall 
-          currentUser={currentUser}
-          socket={socket}
-          incomingCall={incomingCall}
-          onClose={handleCloseVideoCall}
-          activeChatUser={showVideoCall ? selectedUser : null}
-        />
-      )}
+
     </div>
   );
 }

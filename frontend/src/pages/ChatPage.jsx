@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserList from '../components/UserList';
 import ChatBox from '../components/ChatBox';
+import VideoCall from '../components/VideoCall';
 import API from '../utils/api';
 import { connectSocket, getSocket } from '../utils/socket';
 
@@ -35,6 +36,11 @@ export default function ChatPage() {
   const [isMobileChat, setIsMobileChat] = useState(false); // mobile: show chat or list
   const socketRef = useRef(null);
 
+  // Video call states
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [activeCallUser, setActiveCallUser] = useState(null);
+
   const showToast = (msg, type = 'info') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
@@ -63,8 +69,17 @@ export default function ChatPage() {
       console.warn('Socket error:', err.message);
     });
 
+    const handleIncomingCall = (data) => {
+      console.log('🔔 INCOMING CALL DETECTED from:', data?.from);
+      setIncomingCall(data);
+      setShowVideoCall(true);
+    };
+
+    sock.on('incoming-call', handleIncomingCall);
+
     return () => {
       // Don't disconnect on unmount — keep connection alive across re-renders
+      sock.off('incoming-call', handleIncomingCall);
     };
   }, [navigate]);
 
@@ -136,6 +151,12 @@ export default function ChatPage() {
     navigate('/login');
   };
 
+  const handleCloseVideoCall = () => {
+    setShowVideoCall(false);
+    setIncomingCall(null);
+    setActiveCallUser(null);
+  };
+
   return (
     <div className="app-shell">
       {/* Sidebar */}
@@ -162,6 +183,11 @@ export default function ChatPage() {
           socket={socketRef.current}
           onlineUsers={onlineUsers}
           onBack={handleBack}
+          onStartVideoCall={() => {
+            setActiveCallUser(selectedUser);
+            setShowVideoCall(true);
+            setIncomingCall(null);
+          }}
         />
       ) : (
         /* Desktop: show welcome screen; mobile: hidden (sidebar is shown) */
@@ -172,6 +198,17 @@ export default function ChatPage() {
 
       {/* Toast */}
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
+
+      {/* Video Call Component */}
+      {showVideoCall && (
+        <VideoCall 
+          currentUser={user}
+          socket={socketRef.current}
+          incomingCall={incomingCall}
+          onClose={handleCloseVideoCall}
+          activeChatUser={showVideoCall ? activeCallUser : null}
+        />
+      )}
     </div>
   );
 }

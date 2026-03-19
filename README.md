@@ -8,8 +8,8 @@ A clean, minimal, beginner-friendly **real-time chat application** built with Re
 
 | Service | URL |
 |---------|-----|
-| **App (Frontend + Backend)** | `https://5000-<sandbox>.novita.ai` |
-| **API Base** | `https://5000-<sandbox>.novita.ai/api` |
+| **App (Frontend )** | `https://chat-app-beta-nine-50.vercel.app` |
+| **API Base** | `https://chat-app-beta-nine-50.vercel.app/` |
 
 ---
 
@@ -162,7 +162,7 @@ cd frontend && npm run build
 
 ---
 
-## 🔑 Default Credentials
+<!-- ## 🔑 Default Credentials
 
 | Role | User ID | Password |
 |------|---------|----------|
@@ -170,7 +170,7 @@ cd frontend && npm run build
 | Test User 1 | `alice` | `alice123` |
 | Test User 2 | `bob` | `bob123` |
 
----
+--- -->
 
 ## 🔒 Security
 
