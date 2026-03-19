@@ -315,6 +315,8 @@ const VideoCall = forwardRef(function VideoCall({
   // Determine the display state
   const isReceiving = callState === 'receiving' || (callState === 'idle' && incomingCall);
   const isActive = callState === 'active' || (callState === 'calling');
+  
+  const displayUserId = remoteUser?.userId || incomingCall?.from || activeChatUser?.userId;
 
   return (
     <div className="call-overlay">
@@ -327,11 +329,11 @@ const VideoCall = forwardRef(function VideoCall({
             </div>
 
             <div className="call-avatar-section">
-              <div className="avatar-huge pulse" style={{ background: getAvatarColor(remoteUser?.userId) }}>
-                <span className="avatar-text">{getInitials(remoteUser?.userId)}</span>
+              <div className="avatar-huge pulse" style={{ background: getAvatarColor(displayUserId) }}>
+                <span className="avatar-text">{getInitials(displayUserId)}</span>
               </div>
               <div className="call-info">
-                <h3 className="caller-name">{remoteUser?.userId}</h3>
+                <h3 className="caller-name">{displayUserId}</h3>
                 <p className="calling-status">
                   <span className="status-dot"></span> Calling
                 </p>
@@ -373,12 +375,12 @@ const VideoCall = forwardRef(function VideoCall({
                 />
                 {(!remoteStream || !remoteStream.getVideoTracks().some(t => t.enabled)) && (
                    <div className="video-placeholder">
-                      <div className="avatar-lg" style={{ background: getAvatarColor(remoteUser?.userId) }}>
-                        {getInitials(remoteUser?.userId)}
+                      <div className="avatar-lg" style={{ background: getAvatarColor(displayUserId) }}>
+                        {getInitials(displayUserId)}
                       </div>
                    </div>
                 )}
-                <div className="user-label">{remoteUser?.userId}</div>
+                <div className="user-label">{displayUserId}</div>
               </div>
               
               <div className="local-video-container">
@@ -400,7 +402,7 @@ const VideoCall = forwardRef(function VideoCall({
             </div>
 
             <div className="call-status">
-              {callState === 'calling' ? `Calling ${remoteUser?.userId}...` : 'Call in progress'}
+              {callState === 'calling' ? `Calling ${displayUserId}...` : 'Call in progress'}
             </div>
 
             <div className="call-controls">
