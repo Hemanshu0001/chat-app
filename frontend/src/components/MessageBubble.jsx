@@ -1,4 +1,5 @@
 import { formatTime } from '../utils/helpers';
+import { FaCheck, FaCheckDouble, FaTrash } from 'react-icons/fa';
 
 export default function MessageBubble({ 
   message, 
@@ -45,7 +46,7 @@ export default function MessageBubble({
           {formatTime(message.timestamp)}
           {isSent && (
             <span className="check-icon">
-              {message.isRead ? '✓✓' : '✓'}
+              {message.isRead ? <FaCheckDouble /> : <FaCheck />}
             </span>
           )}
         </div>
@@ -61,7 +62,7 @@ export default function MessageBubble({
           }}
           title="Delete message"
         >
-          🗑️
+          <FaTrash />
         </button>
       )}
     </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import API from '../utils/api';
 import { getAvatarColor, formatDate } from '../utils/helpers';
+import { FaCommentAlt, FaHandSparkles, FaDoorOpen, FaUsers, FaCircle, FaBan, FaUserPlus, FaHourglassHalf, FaCheck, FaAddressBook, FaPen, FaTrash, FaTimes } from 'react-icons/fa';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -159,14 +160,14 @@ export default function AdminDashboard() {
       {/* Header */}
       <header className="admin-header">
         <h1>
-          <span style={{ fontSize: '1.4rem' }}>💬</span>
+          <span style={{ fontSize: '1.4rem' }}><FaCommentAlt style={{ color: '#10b981' }} /></span>
           <span> SimpleChat</span>
           <span style={{ fontSize: '.75rem', opacity: .7, marginLeft: 8, fontWeight: 400 }}>Admin Panel</span>
         </h1>
         <div className="admin-nav">
-          <span style={{ fontSize: '.85rem', opacity: .8, marginRight: 8 }}>👋 {user?.userId}</span>
+          <span style={{ fontSize: '.85rem', opacity: .8, marginRight: 8 }}><FaHandSparkles style={{ marginRight: '4px' }} /> {user?.userId}</span>
           <button className="logout-btn" onClick={handleLogout}>
-            🚪 Logout
+            <FaDoorOpen style={{ marginRight: '4px' }} /> Logout
           </button>
         </div>
       </header>
@@ -176,7 +177,7 @@ export default function AdminDashboard() {
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-icon" style={{ background: '#eff6ff' }}>
-              <span style={{ fontSize: '1.4rem' }}>👥</span>
+              <span style={{ fontSize: '1.4rem' }}><FaUsers style={{ color: '#2563eb' }} /></span>
             </div>
             <div>
               <div className="stat-label">Total Users</div>
@@ -185,7 +186,7 @@ export default function AdminDashboard() {
           </div>
           <div className="stat-card">
             <div className="stat-icon" style={{ background: '#f0fdf4' }}>
-              <span style={{ fontSize: '1.4rem' }}>🟢</span>
+              <span style={{ fontSize: '1.4rem' }}><FaCircle style={{ color: '#22c55e' }} /></span>
             </div>
             <div>
               <div className="stat-label">Online Now</div>
@@ -194,7 +195,7 @@ export default function AdminDashboard() {
           </div>
           <div className="stat-card">
             <div className="stat-icon" style={{ background: '#fef2f2' }}>
-              <span style={{ fontSize: '1.4rem' }}>🚫</span>
+              <span style={{ fontSize: '1.4rem' }}><FaBan style={{ color: '#ef4444' }} /></span>
             </div>
             <div>
               <div className="stat-label">Blocked</div>
@@ -206,7 +207,7 @@ export default function AdminDashboard() {
         {/* Add User */}
         <div className="card">
           <div className="card-title">
-            <span>➕</span> Add New User
+            <span><FaUserPlus /></span> Add New User
           </div>
           <form onSubmit={handleAddUser} className="add-user-form">
             <input
@@ -229,7 +230,7 @@ export default function AdminDashboard() {
               disabled={addLoading}
               style={{ whiteSpace: 'nowrap' }}
             >
-              {addLoading ? '⏳ Adding…' : '✅ Add User'}
+              {addLoading ? <><FaHourglassHalf style={{ marginRight: '4px' }} /> Adding…</> : <><FaCheck style={{ marginRight: '4px' }} /> Add User</>}
             </button>
           </form>
         </div>
@@ -238,12 +239,12 @@ export default function AdminDashboard() {
         <div className="card">
           <div className="card-title" style={{ justifyContent: 'space-between' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>📋</span> All Users ({users.length})
+              <span><FaAddressBook /></span> All Users ({users.length})
             </span>
             <input
               type="text"
               className="search-input"
-              placeholder="🔍 Search users…"
+              placeholder="Search users…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ width: 'auto', maxWidth: 200 }}
@@ -288,11 +289,11 @@ export default function AdminDashboard() {
                       </td>
                       <td>
                         {u.isBlocked ? (
-                          <span className="badge badge-blocked">🚫 Blocked</span>
+                          <span className="badge badge-blocked"><FaBan style={{ marginRight: '4px' }} /> Blocked</span>
                         ) : u.isOnline ? (
-                          <span className="badge badge-online">🟢 Online</span>
+                          <span className="badge badge-online"><FaCircle style={{ fontSize: '0.6em', marginRight: '4px' }} /> Online</span>
                         ) : (
-                          <span className="badge badge-offline">⚫ Offline</span>
+                          <span className="badge badge-offline"><FaCircle style={{ fontSize: '0.6em', marginRight: '4px' }} /> Offline</span>
                         )}
                       </td>
                       <td style={{ color: '#667781', fontSize: '.85rem' }}>
@@ -304,7 +305,7 @@ export default function AdminDashboard() {
                             className="btn btn-sm btn-edit"
                             onClick={() => openEditModal(u)}
                           >
-                            ✏️ Edit
+                            <FaPen style={{ marginRight: '4px' }} /> Edit
                           </button>
                           <button
                             className={`btn btn-sm ${u.isBlocked ? 'btn-outline' : 'btn-danger'}`}
@@ -312,14 +313,14 @@ export default function AdminDashboard() {
                             disabled={actionLoading === u._id}
                           >
                             {actionLoading === u._id
-                              ? '⏳'
-                              : u.isBlocked ? '✅ Unblock' : '🚫 Block'}
+                              ? <FaHourglassHalf />
+                              : u.isBlocked ? <><FaCheck style={{ marginRight: '4px' }} /> Unblock</> : <><FaBan style={{ marginRight: '4px' }} /> Block</>}
                           </button>
                           <button
                             className="btn btn-sm btn-delete"
                             onClick={() => handleDelete(u)}
                           >
-                            🗑️ Delete
+                            <FaTrash style={{ marginRight: '4px' }} /> Delete
                           </button>
                         </div>
                       </td>
@@ -342,8 +343,8 @@ export default function AdminDashboard() {
         <div className="modal-overlay" onClick={closeEditModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>✏️ Edit User</h3>
-              <button className="modal-close" onClick={closeEditModal}>✕</button>
+              <h3><FaPen style={{ marginRight: '4px' }} /> Edit User</h3>
+              <button className="modal-close" onClick={closeEditModal}><FaTimes /></button>
             </div>
             <form onSubmit={handleEditUser}>
               <div className="form-group">
@@ -372,7 +373,7 @@ export default function AdminDashboard() {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-success" disabled={editLoading}>
-                  {editLoading ? '⏳ Saving...' : '✅ Save Changes'}
+                  {editLoading ? <><FaHourglassHalf style={{ marginRight: '4px' }} /> Saving...</> : <><FaCheck style={{ marginRight: '4px' }} /> Save Changes</>}
                 </button>
               </div>
             </form>

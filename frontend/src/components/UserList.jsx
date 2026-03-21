@@ -1,4 +1,5 @@
 import { getAvatarColor, getInitials, formatTime } from '../utils/helpers';
+import { FaCommentAlt, FaDoorOpen, FaCircle } from 'react-icons/fa';
 
 export default function UserList({
   users,
@@ -20,9 +21,9 @@ export default function UserList({
     <div className="sidebar">
       {/* Header */}
       <div className="sidebar-header">
-        <h2>💬 Government Portal</h2>
+        <h2><FaCommentAlt style={{ marginRight: '8px', color: '#10b981' }} /> Government Portal</h2>
         <button className="btn-ghost" onClick={onLogout} title="Logout">
-          🚪
+          <FaDoorOpen />
         </button>
       </div>
 
@@ -38,7 +39,7 @@ export default function UserList({
         </div>
         <div>
           <div style={{ fontSize: '.85rem', fontWeight: 600 }}>{currentUser?.userId}</div>
-          <div style={{ fontSize: '.72rem', color: 'var(--text-secondary)' }}>🟢 Online</div>
+          <div style={{ fontSize: '.72rem', color: 'var(--text-secondary)' }}><FaCircle style={{ fontSize: '0.6em', marginRight: '4px', color: '#22c55e' }} /> Online</div>
         </div>
       </div>
 
@@ -47,7 +48,7 @@ export default function UserList({
         <input
           type="text"
           className="search-input"
-          placeholder="🔍 Search users…"
+          placeholder="Search users…"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />
@@ -86,7 +87,7 @@ export default function UserList({
                 <div className="user-info">
                   <div className="user-name">{u.userId}</div>
                   <div className="user-status">
-                    {isOnline ? '🟢 Online' : '⚫ Offline'}
+                    {isOnline ? <><FaCircle style={{ fontSize: '0.6em', marginRight: '4px', color: '#22c55e' }} /> Online</> : <><FaCircle style={{ fontSize: '0.6em', marginRight: '4px', color: '#6b7280' }} /> Offline</>}
                   </div>
                 </div>
 

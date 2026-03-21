@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { FaTrash, FaQuestionCircle, FaHourglassHalf } from 'react-icons/fa';
 
 export default function ConfirmModal({
   isOpen,
@@ -37,7 +38,7 @@ export default function ConfirmModal({
     <div className="confirm-overlay" onClick={loading ? undefined : onCancel}>
       <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
         <div className="confirm-icon">
-          {confirmStyle === 'danger' ? '🗑️' : '❓'}
+          {confirmStyle === 'danger' ? <FaTrash /> : <FaQuestionCircle />}
         </div>
         <h3 className="confirm-title">{title}</h3>
         <p className="confirm-message">{message}</p>
@@ -55,7 +56,7 @@ export default function ConfirmModal({
             onClick={onConfirm}
             disabled={loading}
           >
-            {loading ? '⏳ Processing...' : confirmText}
+            {loading ? <><FaHourglassHalf style={{ marginRight: '4px' }} /> Processing...</> : confirmText}
           </button>
         </div>
       </div>

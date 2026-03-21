@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { FaExclamationTriangle, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const ChatIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor">
@@ -45,10 +46,9 @@ export default function Login() {
           <p>Sign in to start chatting</p>
         </div>
 
-        {/* Error */}
         {error && (
           <div className="error-msg">
-            <span>⚠️</span> {error}
+            <span><FaExclamationTriangle /></span> {error}
           </div>
         )}
 
@@ -90,7 +90,7 @@ export default function Login() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}
               >
-                {showPass ? '🙈' : '👁️'}
+                {showPass ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>

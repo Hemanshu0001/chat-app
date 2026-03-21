@@ -4,6 +4,7 @@ import ConfirmModal from './ConfirmModal';
 import VideoCall from './VideoCall';
 import { getAvatarColor, getInitials, formatDate } from '../utils/helpers';
 import API from '../utils/api';
+import { FaArrowLeft, FaPen, FaCircle, FaVideo, FaCheckSquare, FaHourglassHalf, FaTrash, FaTimes, FaHandSparkles, FaPaperPlane } from 'react-icons/fa';
 
 export default function ChatBox({
   selectedUser,
@@ -330,7 +331,7 @@ export default function ChatBox({
     <div className="chat-area visible">
       {/* Chat Header */}
       <div className="chat-header">
-        <button className="back-btn" onClick={onBack}>←</button>
+        <button className="back-btn" onClick={onBack}><FaArrowLeft /></button>
         <div className="avatar avatar-sm" style={{ background: getAvatarColor(selectedUser.userId) }}>
           {getInitials(selectedUser.userId)}
           {isOnline && <span className="online-dot" />}
@@ -339,10 +340,10 @@ export default function ChatBox({
           <div className="user-name">{selectedUser.userId}</div>
           <div className="user-status">
             {isTyping
-              ? '✏️ typing…'
+              ? <><FaPen style={{ fontSize: '0.8em', marginRight: '4px' }} /> typing…</>
               : isOnline
-              ? '🟢 Online'
-              : '⚫ Offline'}
+              ? <><FaCircle style={{ color: '#22c55e', fontSize: '0.6em', marginRight: '4px' }} /> Online</>
+              : <><FaCircle style={{ color: '#6b7280', fontSize: '0.6em', marginRight: '4px' }} /> Offline</>}
           </div>
         </div>
         
@@ -356,7 +357,7 @@ export default function ChatBox({
             }}
             title="Start video call"
           >
-            📹
+            <FaVideo />
           </button>
         )}
         
@@ -367,7 +368,7 @@ export default function ChatBox({
             onClick={() => setSelectionMode(true)}
             title="Select messages to delete"
           >
-            ☑️
+            <FaCheckSquare />
           </button>
         )}
       </div>
@@ -390,13 +391,13 @@ export default function ChatBox({
               onClick={handleDeleteSelected}
               disabled={selectedMessages.size === 0 || deleting}
             >
-              {deleting ? '⏳' : `🗑️ Delete (${selectedMessages.size})`}
+              {deleting ? <FaHourglassHalf /> : <><FaTrash style={{ marginRight: '4px' }} /> Delete ({selectedMessages.size})</>}
             </button>
             <button 
               className="btn btn-sm btn-ghost" 
               onClick={cancelSelection}
             >
-              ✕ Cancel
+              <FaTimes style={{ marginRight: '4px' }} /> Cancel
             </button>
           </div>
         </div>
@@ -411,7 +412,7 @@ export default function ChatBox({
           </div>
         ) : messages.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#999', padding: '40px 0', fontSize: '.9rem' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>👋</div>
+            <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}><FaHandSparkles /></div>
             Say hi to <strong>{selectedUser.userId}</strong>!
           </div>
         ) : (
@@ -470,11 +471,9 @@ export default function ChatBox({
           title="Send message (Enter)"
         >
           {sending ? (
-            <span style={{ fontSize: '.7rem' }}>⏳</span>
+            <FaHourglassHalf />
           ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-            </svg>
+            <FaPaperPlane />
           )}
         </button>
       </div>

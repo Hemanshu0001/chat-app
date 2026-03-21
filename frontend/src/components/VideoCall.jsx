@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, forwardRef } from 'react';
 import { getAvatarColor, getInitials } from '../utils/helpers';
+import { FaPhoneAlt, FaCheck, FaTimes, FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from 'react-icons/fa';
 
 const ICE_SERVERS = {
   iceServers: [
@@ -355,7 +356,7 @@ const VideoCall = forwardRef(function VideoCall({
         {isReceiving ? (
           <div className="call-incoming animate-slide-in">
             <div className="call-header">
-              <h2 className="call-title">📞 Incoming Call</h2>
+              <h2 className="call-title"><FaPhoneAlt style={{ marginRight: '8px' }} /> Incoming Call</h2>
               <p className="call-status">Someone is calling...</p>
             </div>
 
@@ -377,7 +378,7 @@ const VideoCall = forwardRef(function VideoCall({
                 onClick={acceptCall}
                 title="Accept the call"
               >
-                <span className="btn-icon">✓</span>
+                <span className="btn-icon"><FaCheck /></span>
                 <span className="btn-text">Accept</span>
               </button>
               <button 
@@ -385,7 +386,7 @@ const VideoCall = forwardRef(function VideoCall({
                 onClick={rejectCall}
                 title="Reject the call"
               >
-                <span className="btn-icon">✕</span>
+                <span className="btn-icon"><FaTimes /></span>
                 <span className="btn-text">Decline</span>
               </button>
             </div>
@@ -442,17 +443,17 @@ const VideoCall = forwardRef(function VideoCall({
                 onClick={toggleMuteAudio}
                 title={isAudioMuted ? 'Unmute Mic' : 'Mute Mic'}
               >
-                {isAudioMuted ? '🔇' : '🎤'}
+                {isAudioMuted ? <FaMicrophoneSlash /> : <FaMicrophone />}
               </button>
               <button 
                 className={`btn-control ${isVideoMuted ? 'muted' : ''}`} 
                 onClick={toggleMuteVideo}
                 title={isVideoMuted ? 'Turn Camera On' : 'Turn Camera Off'}
               >
-                {isVideoMuted ? '📵' : '📹'}
+                {isVideoMuted ? <FaVideoSlash /> : <FaVideo />}
               </button>
               <button className="btn-control end" onClick={endCall} title="End Call">
-                📞
+                <FaPhoneAlt />
               </button>
             </div>
           </div>
