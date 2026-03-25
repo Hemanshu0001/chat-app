@@ -406,9 +406,11 @@ export default function ChatBox({
       {/* Messages */}
       <div className="messages-container">
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#999', padding: '40px 0' }}>
-            <div className="spinner" style={{ margin: '0 auto 10px' }} />
-            Loading messages…
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="skeleton skeleton-bubble" style={{ alignSelf: 'flex-start' }} />
+            <div className="skeleton skeleton-bubble" style={{ alignSelf: 'flex-end', background: 'var(--primary-glow)' }} />
+            <div className="skeleton skeleton-bubble" style={{ alignSelf: 'flex-start', width: '40%' }} />
+            <div className="skeleton skeleton-bubble" style={{ alignSelf: 'flex-end', width: '70%', background: 'var(--primary-glow)' }} />
           </div>
         ) : messages.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#999', padding: '40px 0', fontSize: '.9rem' }}>

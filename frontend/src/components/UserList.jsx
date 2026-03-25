@@ -57,9 +57,16 @@ export default function UserList({
       {/* User list */}
       <div className="user-list">
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
-            <div className="spinner" style={{ margin: '0 auto 10px' }} />
-            Loading…
+          <div style={{ padding: '16px' }}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
+                <div className="skeleton skeleton-avatar" />
+                <div style={{ flex: 1 }}>
+                  <div className="skeleton skeleton-text" />
+                  <div className="skeleton skeleton-text short" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: '40px 20px', textAlign: 'center', color: '#999', fontSize: '.9rem' }}>

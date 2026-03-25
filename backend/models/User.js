@@ -43,4 +43,7 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// Indexes for faster user listing queries
+userSchema.index({ role: 1, isBlocked: 1, isOnline: -1, userId: 1 });
+
 module.exports = mongoose.model('User', userSchema);
